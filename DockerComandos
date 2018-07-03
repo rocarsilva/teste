@@ -1,0 +1,431 @@
+#Docker command line
+
+docker run -d --name nginx -p 80:80 --privileged=true -it nginx:1.0
+docker exec -it nginx bash
+-v /pasta/do/host:/pasta/do/docker:rw
+
+---
+DOCKER
+https://github.com/infoslack/docker-exemplos
+docker.infoslack.com
+
+https://docs.docker.com/install/linux/linux-postinstall/#manage-docker-as-a-non-root-user
+
+
+
+# ==========================================================
+# ==============  Instalando Docker  =======================
+# ==========================================================
+>sudo sh -c "wget -qO- https://get.docker.io/gpg | apt-key add -"
+>sudo sh -c "echo deb http://get.docker.io/ubuntu docker main > /etc/apt/sources.list.d/docker.list"
+>sudo apt-get update && apt-get install lxc-docker
+
+# ==========================================================
+# ===============  Util - Linux  ===========================
+# ==========================================================
+#Mostra versão da kernel d linux que deve ser maior ou igual a "3.10"
+>uname -r
+
+#Mostra IP da maquina atual
+>ifconfig eth0| grep 'inet'
+
+#Mostra informação da maquina como versão do OS
+>cat /etc/lsb-release
+
+
+# ==========================================================
+# ===============  Util - Docker  ==========================
+# ==========================================================
+# exibndo containers rodando:
+# "-a" => Mostra todos os containers "inicializados" ou "pausados"
+# "-q" => Informa apenas o ID dos containers
+>sudo docker ps -a
+>sudo docker ps -qa
+
+#informa,detalhes sobre o nível de consumo de recursos na máquina host, feito pelos containers, onde "bc5fdb751dd1" é o ID do container
+>sudo docker stats bc5fdb751dd1
+
+# Remove um container do Docker onde "bc5fdb751dd1" é o ID do container
+>sudo docker ps -a
+>sudo docker rm bc5fdb751dd1
+
+# Remove imagens criadas dos container
+>docker images
+>sudo docker rmi 78f4a58b0f31
+
+# "--name NOME" cria um container com um nome, no exemplo abaixo foi criado um container "ubuntu" com nome "ex_nginx"
+>sudo docker run -it --name ex_nginx ubuntu
+
+# "--rm" => Ao finalizar a execução do container,ele será excluído automaticamente
+# "-p"   => Informando ao Docker que a porta 8080 no host será aberta e mapeada para a porta 80
+# "-d"   => Faz o container rodar em backgroud
+>sudo docker run -it --rm -p 8080:80 ubuntu/nginx /bin/bash
+
+# Comita as alterações na imagem do conteiner, é preciso comitar passando "ID" do container e "nome" do commit
+>sudo docker commit f637c4df67a1 ubuntu/nginx
+# Lista imagens do Docker
+>docker images
+
+
+# Apaga "TODOS" os containers e imagens do Docker
+>sudo docker rm $(docker ps -qa)
+
+# Apaga "TODAS" imagens do Docker
+>sudo docker rmi $(docker images -q)
+
+#Dcoker Start/Stop onde "c1d8642f5fc3" é o ID do container
+>sudo docker stop c1d8642f5fc3
+
+# Capturar informações do container
+sudo docker inspect a6b4fe21aece
+sudo docker port a6b4fe21aece
+
+# Executar o comandos diretamente no container
+>sudo docker exec -it a6b4fe21aece la -la
+
+# Expecificando um volume com "-v" entre host e containers sendo os parametros:
+# "ro" => para somente leitura
+# "rw" => para leitura e escrita
+>docker run -d -v /maquina_host/nginx:/maquina_container/share/nginx/html:ro nginx
+
+# ==========================================================
+# ===================  EXEMPLOS  ===========================
+# ========================================================== 
+
+rafael.camargo:123@proxy-corp002.dc.nova:3128
+#------------------
+# Ola Mundo
+#------------------
+>sudo docker run ubuntu /bin/echo "Teste, Docker!"
+
+
+
+
+#------------------
+# Iniciando um container
+#------------------
+# "-i" => Modo interativo
+# "-t" => Linka o terminar do container criado
+>sudo docker run -i -t ubuntu /bin/bash
+
+
+#------------------
+# Criando um container rodando com "Ubunto" e "nginx"
+#------------------
+>sudo docker run -it --name ex_nginx ubuntu
+>apt-get update
+>apt-get install -y nginx
+>nginx -v
+
+#Sai do container e comita as alterações
+>exit
+>sudo docker commit f637c4df67a1 ubuntu/nginx
+
+# Roda o container com as alterações fazendo um mapeamento de portas da maquina local para a do container
+>sudo docker run -it --rm -p 8080:80 ubuntu/nginx /bin/bash
+>service nginx start
+
+
+# Se acessar no browser o endereço "http://localhost:8080/" nós iremos acessar o container do "nginx", isso ajuda entender o parâmetro "-p 8080:80"
+
+
+#------------------
+# 1) Docker File Simples
+#------------------
+
+#Criar o arquivo "Dockerfile" com o conteúdo:
+-------Dockerfile
+FROM ubuntu
+MAINTAINER Daniel Romero <infoslack@gmail.com>
+ENV http_proxy=http://usuario:senha@proxy.empresa:3128
+RUN apt-get update
+RUN apt-get install -y nginx
+EXPOSE 80
+-------
+
+#Rodando o "Dockerfile" o parâmetro "ngnix" é o nome da imagem criada e o "." indica que o "Dockerfile" está na mesma pasta que estamos executando o comando
+>docker build -t ngnix .
+
+#Rodando a imagem "nginx" criada
+>sudo docker run -d -p 8080:80 nginx /usr/sbin/nginx -g "daemon off;"
+
+#Testando a comunicação
+>curl -IL http://localhost:8080
+
+
+#------------------
+# 2) Docker File Simples
+#------------------
+
+#Criar o arquivo "Dockerfile" com o conteúdo usando "EXPOSE":
+-------Dockerfile
+FROM ubuntu
+MAINTAINER Daniel Romero <infoslack@gmail.com>
+ENV http_proxy=http://usuario:senha@proxy.empresa:3128
+RUN apt-get update
+RUN apt-get install -y nginx
+EXPOSE 80
+-------
+
+#Rodando o "Dockerfile" o parâmetro "ngnix" é o nome da imagem criada e o "." indica que o "Dockerfile" está na mesma pasta que estamos executando o comando
+>docker build -t ngnix .
+
+#Rodando a imagem "nginx" criada
+>sudo docker run -d -P nginx /usr/sbin/nginx -g "daemon off;"
+
+#Como não informamos a porta o Docker criou automaticamente uma para nós para ver a porta criada basta executar o comando abaixo:
+>docker port de7e3c350c65
+
+#Testando a comunicação
+>curl -IL http://localhost:32768
+
+
+#------------------
+# 3) Docker File Simples
+#------------------
+
+#Criar o arquivo "Dockerfile" com o conteúdo usando "ADD"
+# Com a instrução ADD , o arquivo chamado "configuracao_nginx.txt" será copiado para o diretório "/etc/nginx/sites-enabled" , e será chamado de "default"
+# O arquivo "configuracao_nginx.txt" deve existir no mesmo contexto do Dockerfile
+# Esse arquivo de configuração do "Nginx" faz com que ele rode na porta 8080
+-------Dockerfile
+FROM ubuntu
+MAINTAINER Daniel Romero <infoslack@gmail.com>
+ENV http_proxy=http://usuario:senha@proxy.empresa:3128
+RUN apt-get update
+RUN apt-get install -y nginx
+ADD configuracao_nginx.txt /etc/nginx/sites-enabled/default
+RUN echo "daemon off;" >> /etc/nginx/nginx.conf
+EXPOSE 8080
+CMD service nginx start
+-------
+
+-------configuracao_nginx.txt
+server {
+  listen 8080 default_server;
+  server_name localhost;
+}
+root /usr/share/nginx/html;
+index index.html index.htm;
+-------
+
+#Rodando o "Dockerfile" o parâmetro "ngnix" é o nome da imagem criada e o "." indica que o "Dockerfile" está na mesma pasta que estamos executando o comando
+>sudo docker build -t nginx .
+
+#Rodando a imagem "nginx" criada
+>sudo docker run -d --name aplicacao_nginx nginx
+
+# Inpecionando o IP do docker para podermos chamar seus serviços
+>sudo docker inspect a6b4fe21aece | grep IPAddress
+# ou 
+> docker inspect aplicacao_nginx | grep IPAddress
+
+#Testando a comunicação onde "172.17.0.2" é o IP do container obtido anteriormente
+>curl -IL http://172.17.0.2:8080
+
+# Acessa o "bash" do container:
+>sudo docker exec -it aplicacao_nginx bash
+
+#------------------
+# 4) Docker File Simples
+#------------------
+
+#Criar o arquivo "Dockerfile"
+-------Dockerfile
+FROM ubuntu
+MAINTAINER Daniel Romero <infoslack@gmail.com>
+ENV http_proxy=http://usuario:senha@proxy.empresa:3128
+RUN apt-get update
+RUN apt-get install -y nginx
+ADD configuracao_nginx.txt /etc/nginx/sites-enabled/default
+RUN echo "daemon off;" >> /etc/nginx/nginx.conf
+EXPOSE 8080
+CMD service nginx start
+-------
+
+-------configuracao_nginx.txt
+server {
+  listen 8080 default_server;
+  server_name localhost;
+}
+root /usr/share/nginx/html;
+index index.html index.htm;
+-------
+
+#Criando a imagem com "Dockerfile"
+>sudo docker build -t nginx .
+
+#Rodando a imagem "nginx" criada, com o parâ metro "-v" para indicar um volume compartilhado entre "HOST" e "Containers"
+#O parâmetrp "-v" indica a pasta do "HOST" => "/home/rafael/DEV/WorkSpace/CNova/Docker/Nginx_03/volume_container" e
+# a pasta destino no "container" => "/usr/share/nginx/html"
+# em seguido é passado o parâmetro "ro" => para somente leitura ou "rw" => para leitura e escrita 
+>docker run -d -v /home/rafael/DEV/WorkSpace/CNova/Docker/Nginx_03/volume_container:/usr/share/nginx/html:ro nginx
+
+# Adicionaod um arquivo no volume do HOST que sera lido pelo container:
+>echo "It works!" > /home/rafael/DEV/WorkSpace/CNova/Docker/Nginx_03/volume_container/index.html
+
+#Ao executar o comando abaixo deve retornar o arquivo HTML criado
+>curl -IL http://172.17.0.2:8080/index.html
+
+
+#------------------
+# 5) 04-MySQL
+#------------------
+
+#Criar o arquivo "Dockerfile"
+# "DEBIAN_FRONTEND noninteractive" evita que aparece telas interativas durante a instalção dos programas
+-------Dockerfile
+FROM ubuntu
+MAINTAINER Rafael Camargo <rafael.camargo.sp@gmail.com>
+ENV http_proxy=http://usuario:senha@proxy.empresa:3128
+ENV DEBIAN_FRONTEND noninteractive
+
+# Installing the 'apt-utils' package gets rid of the 'debconf: delaying package configuration, since apt-utils is not installed'
+# error message when installing any other package with the apt-get package manager.
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+    apt-utils \
+ && rm -rf /var/lib/apt/lists/*
+
+RUN apt-get update -qq && apt-get install -y mysql-server
+ADD configuracao_mysql.cnf /etc/mysql/conf.d/my.cnf
+RUN chmod 664 /etc/mysql/conf.d/my.cnf
+ADD configuracao_run /usr/local/bin/run
+RUN chmod +x /usr/local/bin/run
+VOLUME ["/var/lib/mysql"]
+EXPOSE 3306
+CMD ["/usr/local/bin/run"]
+-------
+
+# Criando arqivos de configuração:
+-------configuracao_mysql.cnf
+[mysqld]
+bind-address=0.0.0.0
+console=1
+general_log=1
+general_log_file=/dev/stdout
+log_error=/dev/stderr
+collation-server=utf8_unicode_ci
+character-set-server=utf8
+-------
+
+-------configuracao_run
+#!/bin/bash
+set -e
+
+chown -R mysql:mysql /var/lib/mysql
+mysql_install_db --user mysql > /dev/null
+
+MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD:-""}
+MYSQL_DATABASE=${MYSQL_DATABASE:-""}
+MYSQL_USER=${MYSQL_USER:-""}
+MYSQL_PASSWORD=${MYSQL_PASSWORD:-""}
+MYSQLD_ARGS=${MYSQLD_ARGS:-""}
+
+tfile=`mktemp`
+if [[ ! -f "$tfile" ]]; then
+  return 1
+fi
+
+cat << EOF > $tfile
+USE mysql;
+FLUSH PRIVILEGES;
+GRANT ALL PRIVILEGES ON *.* TO 'root'@'%' WITH GRANT OPTION;
+UPDATE user SET password=PASSWORD("$MYSQL_ROOT_PASSWORD") WHERE user='root';
+EOF
+
+if [[ $MYSQL_DATABASE != "" ]]; then
+  echo "CREATE DATABASE IF NOT EXISTS \`$MYSQL_DATABASE\` CHARACTER SET utf8 COLLATE utf8_general_ci;" >> $tfile
+
+  if [[ $MYSQL_USER != "" ]]; then
+    echo "GRANT ALL ON \`$MYSQL_DATABASE\`.* to '$MYSQL_USER'@'%' IDENTIFIED BY '$MYSQL_PASSWORD';" >> $tfile
+  fi
+fi
+
+/usr/sbin/mysqld --bootstrap --verbose=0 $MYSQLD_ARGS < $tfile
+rm -f $tfile
+
+exec /usr/sbin/mysqld $MYSQLD_ARGS
+-------
+
+#Gerando imagem
+>sudo docker build -t mysql .
+
+#Executando o container:
+>sudo docker run -d -p 3306:3306 -e MYSQL_ROOT_PASSWORD=xpto1234 --name aplicacao_mysql mysql
+
+#Testando a conexão a partir do HOST local a senha é ""
+>mysql -h 127.0.0.1 -u root -p
+
+
+# ==========================================================
+# ===================  ERROS  ==============================
+# ========================================================== 
+
+#ERRO: "Cannot connect to the Docker daemon. Is the docker daemon running on this host?"
+#SOLUÇÃO: 
+#To run docker daemon on Linux (from CLI), try running:
+# http://stackoverflow.com/questions/21871479/docker-cant-connect-to-docker-daemon
+>sudo service docker start
+
+---------- OR -----------------------------
+#Add the docker group if it doesn't already exist:
+>sudo groupadd docker
+
+#Add the connected user "${USER}" to the docker group:
+>sudo gpasswd -a ${USER} docker
+
+#Restart the Docker daemon:
+>sudo service docker restart
+
+#Either do a newgrp docker or log out/in to activate the changes to groups:
+>newgrp docker
+
+
+
+#---------------------------------------------------------------------------------------------
+#ERRO: Problemas com proxy na empresa
+#SOLUÇÃO:
+# Configurando proxy o valor login e senha podem ser usados em base64
+>echo -n 'username' | base64
+>echo -n 'password' | base64
+>export http_proxy=http://username:p\@ssword@proxy.daempresa.com.br:8080
+>export http_proxy=http://proxy.daempresa.com.br:8080
+>export http_proxy=http://username:password@proxy.daempresa.com.br:8080 
+
+
+
+
+#---------------------------------------------------------------------------------------------
+#ERRO: "debconf: delaying package configuration, since apt-utils is not installed"
+#SOLUÇÃO:
+# Adicionar no "Dockfile":
+---------------
+ENV DEBIAN_FRONTEND noninteractive
+# Installing the 'apt-utils' package gets rid of the 'debconf: delaying package configuration, since apt-utils is not installed'
+# error message when installing any other package with the apt-get package manager.
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+    apt-utils \
+ && rm -rf /var/lib/apt/lists/*
+---------------
+
+
+
+
+
+
+
+
+
+
+
+
+Add CommentCollapse 
+
+ Your workspace has 3,000 messages more than the 10k limit
+That’s more than 3,000 messages you can’t see or search. Upgrade to a paid plan for access to your full history — plus features like guest accounts for contractors, group video calls, and unlimited apps.
+
+Learn More  Skip for Now
+Message Input
+
+Message @Rafael Camargo 
+
