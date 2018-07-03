@@ -1,0 +1,14 @@
+node('slave') {
+    stage('Compila') {
+        sh "touch /tmp/teste"
+    }
+    stage('Teste') {
+        echo 'Teste'
+    }
+    stage('Promote [PRODUCTION]') {
+    input message: "Deseja publicar o deploy?", ok: "Deploy to PRODUCTION!"
+}
+    stage('Deploy') {
+        echo 'Deploy'
+    }
+}
